@@ -71,7 +71,7 @@ module.exports = {
         const action = interaction.options.getString('action');
 
         async function getServerInfos(id_serv) {
-            const api_url = `https://api.antredesloutres.fr/serveurs/${id_serv}`;
+            const api_url = `https://api.antredesloutres.fr/serveurs/infos/${id_serv}`;
             const response = await fetch(api_url);
             const data = await response.json();
 
@@ -142,7 +142,7 @@ module.exports = {
                     );
                     return
                 } catch (error) {
-                    console.error('[ERROR] Erreur lors de la récupération des informations du serveur : ', error);
+                    console.error('[ERROR] Erreur lors de la récupération des informations du serveur pour l\'action : ',  action, '. Erreur :', error);
                     await interaction.reply({content : `Erreur lors de la récupération des informations du serveur.`, ephemeral: true});
                     return;
                 }

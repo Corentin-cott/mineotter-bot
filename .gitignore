@@ -1,4 +1,8 @@
 node_modules
 .env
 config.json
+config-bot.json
+config-rcon.json
+config-api.json
+events/0_check_configs.js
 start.sh

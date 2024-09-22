@@ -8,7 +8,9 @@ module.exports = {
             option.setName('service')
                 .setDescription('Le service pour lequel vous souhaitez récupérer les identifiants.')
                 .setRequired(true)
-                .addChoice('FTP', 'ftp')
+                .addChoices(
+                    { name: 'FTP', value: 'ftp' }
+                )
         ),
     async execute(interaction) {
         const service = interaction.options.getString('service');

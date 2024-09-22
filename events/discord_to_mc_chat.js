@@ -1,6 +1,7 @@
-const { Rcon } = require('rcon-client');
-const { rconPrimaireActif, rconSecondaireActif, channelMcDiscordID, RconPassword, ServIPPrimaire, ServRconPortPrimaire, ServIPSecondaire, ServRconPortSecondaire } = require('../config.json');
 const { Events } = require('discord.js');
+const { token_api } = require('../config-api.json');
+const { ServIPPrimaire, ServIPSecondaire, ServPortPrimaire, ServPortSecondaire, ServRconPortPrimaire, RconPassword, channelMcMyAdminPrimaryID, channelMcMyAdminSecondaryID, rconPrimaireActif, rconSecondaireActif } = require('../config-rcon.json');
+const { Rcon } = require('rcon-client');
 
 let rconPrimaire;
 let rconSecondaire;
@@ -24,14 +25,24 @@ module.exports = {
         let servPrimaireConfigs;
         let servSecondaireConfigs;
         try {
-            let apiData = await fetch('https://api.antredesloutres.fr/serveurs/primaire/actif');
+            const requestOptions = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ client_token: token_api }) // Envoi du token d'authentification
+            };
+            let apiData = await fetch('https://api.antredesloutres.fr/serveurs/primaire', requestOptions);
             servPrimaireConfigs = await apiData.json();
         } catch (error) {
             console.error('[ERROR] Erreur lors de la récupération des informations du serveur primaire : ', error.message);
             return;
         }
         try {
-            let apiData = await fetch('https://api.antredesloutres.fr/serveurs/secondaire/actif');
+            const requestOptions = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ client_token: token_api }) // Envoi du token d'authentification
+            };
+            let apiData = await fetch('https://api.antredesloutres.fr/serveurs/secondaire', requestOptions);
             servSecondaireConfigs = await apiData.json();
         } catch (error) {
             console.error('[ERROR] Erreur lors de la récupération des informations du serveur secondaire : ', error.message);

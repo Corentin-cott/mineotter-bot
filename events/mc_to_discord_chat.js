@@ -1,5 +1,6 @@
 const { Events, EmbedBuilder } = require('discord.js');
-const { RconPassword, ServIPPrimaire, ServRconPortPrimaire, ServIPSecondaire, ServRconPortSecondaire, channelMcDiscordID, channelMcMyAdminPrimaryID, channelMcMyAdminSecondaryID } = require('../config.json');
+const { token_api } = require('../config-api.json');
+const { ServIPPrimaire, ServIPSecondaire, ServPortPrimaire, ServPortSecondaire, ServRconPortPrimaire, ServRconPortSecondaire, RconPassword, channelMcMyAdminPrimaryID, channelMcMyAdminSecondaryID, channelMcDiscordID, rconPrimaireActif, rconSecondaireActif } = require('../config-rcon.json');
 const { Rcon } = require('rcon-client');
 const { Tail } = require('tail');
 const fs = require('fs');
@@ -76,6 +77,13 @@ module.exports = {
             // Regex pour vérifier le format "Stopping server"
             const regex = /^Stopping server$/;
             return regex.test(message);
+        }
+
+        function isRconThread(message) {
+            // Regex pour vérifié tout se qui contient "Thread RCON Client /194.164.76.165 started" ou "Thread RCON Client /194.164.76.165 shutting down"
+            const regex_rconstarted = /Thread RCON Client \/[\d.]+ started/;
+            const regex_rconstopped = /Thread RCON Client \/[\d.]+ shutting down/;
+            return regex_rconstarted.test(message) || regex_rconstopped.test(message);
         }
             
         function getPlayerName(message) {
@@ -318,11 +326,16 @@ module.exports = {
 
         function sendServerCrash() {}
 
-        // Réquete vers l'API de l'Antre des Loutres pour récupérer les informations des serveurs primaires et secondaires
-        let apiData = await fetch('https://api.antredesloutres.fr/serveurs/primaire/actif');
+        // Récupération des configurations des serveurs via l'API avec la méthode POST
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_token: token_api }) // Envoi du token d'authentification
+        };
+        apiData = await fetch('https://api.antredesloutres.fr/serveurs/primaire', requestOptions);
         const servPrimaireConfigs = await apiData.json();
-
-        apiData = await fetch('https://api.antredesloutres.fr/serveurs/secondaire/actif');
+        
+        apiData = await fetch('https://api.antredesloutres.fr/serveurs/secondaire', requestOptions);
         const servSecondaireConfigs = await apiData.json();
         
         let logFilePrimaire = servPrimaireConfigs.path_serv + 'logs/latest.log';
@@ -348,9 +361,13 @@ module.exports = {
     
                 if (channelLogsPrimaire) {
                     try {
-                        await channelLogsPrimaire.send(line);
+                        if (isRconThread(line))
+                            return; // Ignorer les messages des threads RCON
+                        else {
+                            await channelLogsPrimaire.send(line);
+                        }
                     } catch (error) {
-                        console.error('[ERROR] Erreur lors de l\'envoi du message au salon', '\x1b[34m', 'mcmyadmin-primaire', '\x1b[0m', ': ${error.message}');
+                        console.error('[ERROR] Erreur lors de l\'envoi du message au salon', '\x1b[34m', 'mcmyadmin-primaire', '\x1b[0m', `: ${error}`);
                     }
     
                     if (channel) {
@@ -373,7 +390,7 @@ module.exports = {
     
                             }
                         } catch (error) {
-                            console.error('[ERROR] Erreur lors de l\'envoi du message au salon', '\x1b[34m', 'discu-mc', '\x1b[0m', '(serveur : primaire) : ${error.message}');
+                            console.error('[ERROR] Erreur lors de l\'envoi du message au salon', '\x1b[34m', 'discu-mc', '\x1b[0m', `(serveur : primaire) : ${error.message}`);
                         }
                     } else {
                         console.error('[ERROR] Salon', '\x1b[34m', 'discu-mc', '\x1b[0m', 'non trouvé (serveur : primaire)');
@@ -396,9 +413,15 @@ module.exports = {
     
                 if (channelLogsSecondaire) {
                     try {
-                        await channelLogsSecondaire.send(line);
+                        if (isRconThread(line)) {
+                            // console.log("[INFO] Arrêt de la lecture de la ligne : ", line);
+                            return; // Ignorer les messages des threads RCON
+                        } else {
+                            console.log("[INFO] Envoi de la ligne : ", line);
+                            await channelLogsSecondaire.send(line);
+                        }
                     } catch (error) {
-                        console.error('[ERROR] Erreur lors de l\'envoi du message au salon', '\x1b[34m', 'mcmyadmin-secondaire', '\x1b[0m', ': ${error.message}');
+                        console.error('[ERROR] Erreur lors de l\'envoi du message au salon', '\x1b[34m', 'mcmyadmin-secondaire', '\x1b[0m', `: ${error.message}`);
                     }
     
                     if (channel) {
@@ -421,7 +444,7 @@ module.exports = {
     
                             }
                         } catch (error) {
-                            console.error('[ERROR] Erreur lors de l\'envoi du message au salon', '\x1b[34m', 'discu-mc', '\x1b[0m', '(serveur : secondaire) : ${error.message}');
+                            console.error('[ERROR] Erreur lors de l\'envoi du message au salon', '\x1b[34m', 'discu-mc', '\x1b[0m', `(serveur : secondaire) : ${error.message}`);
                         }
                     } else {
                         console.error('[ERROR] Salon', '\x1b[34m', 'discu-mc', '\x1b[0m', 'non trouvé (serveur : secondaire)');

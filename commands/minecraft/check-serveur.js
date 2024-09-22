@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
+const { token_api } = require('../../config.json');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -14,12 +15,16 @@ module.exports = {
                     { name: 'Serveur secondaire', value: 'secondaire' },
                     { name: 'Les deux serveurs', value: 'both' }
                 )
-            ),
+        ),
     async execute(interaction) {
         async function getServerInfos(serveur_type) {
-            const api_url = `https://api.antredesloutres.fr/serveurs/${serveur_type}/actif`;
-            const response = await fetch(api_url);
-            const data = await response.json();
+            const requestOptions = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ client_token: token_api }) // Envoi du token d'authentification
+            };
+            const reponse = await fetch(`https://api.antredesloutres.fr/serveurs/${serveur_type}`, requestOptions)
+            const data = await reponse.json();
 
             let embedColor = data.embedColor || '#FFFFFF';
             let jeu = data.jeu || '🥸';
@@ -90,7 +95,7 @@ module.exports = {
                 await interaction.reply({ embeds: [embed] });
             } else {
                 await interaction.channel.send({ embeds: [embed] });
-            }   
+            }
         }
 
         const action = interaction.options.getString('action');
@@ -104,9 +109,9 @@ module.exports = {
         } else {
             const serverInfoPrimary = await getServerInfos('primaire');
             const serverInfoSecondary = await getServerInfos('secondaire');
-            
+
             await sendEmbed('Primaire', ...Object.values(serverInfoPrimary), false);
             await sendEmbed('Secondaire', ...Object.values(serverInfoSecondary), true);
-        }        
+        }
     }
 };

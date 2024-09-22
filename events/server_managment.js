@@ -1,5 +1,6 @@
 const { Events, EmbedBuilder, ButtonBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonStyle } = require('discord.js');
-const { token_api, maxServeurParUtilisateur } = require('../config.json');
+const { maxServeurParUtilisateur } = require('../config.json');
+const { token_api } = require('../config-api.json');
 
 module.exports = {
     name: Events.ClientReady,

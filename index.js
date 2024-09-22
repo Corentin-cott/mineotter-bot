@@ -1,10 +1,9 @@
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
+const { token_bot } = require('./config-bot.json');
 const fs = require('fs');
 const path = require('path');
-const { token } = require('./config.json');
 
 // Créer un nouveau client Discord
-// Crée une nouvelle instance de client
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -16,25 +15,6 @@ const client = new Client({
 
 client.commands = new Collection();
 client.cooldowns = new Collection();
-
-// Remplir config.json avec les informations nécessaires si celui n'a que {}
-if (fs.readFileSync('./config.json').toString() === '{}') {
-	console.warn('[WARN] Fichier de configuration vide ou inexistant. Remplissage du fichier avec les informations de base (token, token_api, ServIPPrimaire, ServIPSecondaire, ServPortPrimaire, ServPortSecondaire, ServRconPortPrimaire, ServRconPortSecondaire, RconPassword, rconPrimaireActif, rcconSecondaireActif et maxServeurParUtilisateur).');
-	fs.writeFileSync('./config.json', JSON.stringify({
-		"token": "YOUR_DISCORD_BOT_TOKEN",
-		"token_api": "YOUR_API_TOKEN",
-		"ServIPPrimaire": "YOUR_PRIMARY_SERVER_IP",
-		"ServIPSecondaire": "YOUR_SECONDARY_SERVER_IP",
-		"ServPortPrimaire": "YOUR_PRIMARY_SERVER_PORT",
-		"ServPortSecondaire": "YOUR_SECONDARY_SERVER_PORT",
-		"ServRconPortPrimaire": "YOUR_PRIMARY_SERVER_RCON_PORT",
-		"ServRconPortSecondaire": "YOUR_SECONDARY_SERVER_RCON_PORT",
-		"RconPassword": "YOUR_RCON_PASSWORD",
-		"rconPrimaireActif": true,
-		"rconSecondaireActif": true,
-		"maxServeurParUtilisateur": 1
-	}, null, 4));
-}
 
 // Récupérer les commandes
 const foldersPath = path.join(__dirname, 'commands');
@@ -60,17 +40,23 @@ for (const folder of commandFolders) {
 const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
-// Charger les événements
+// On charge les événements dans l'ordre de leur nom
 for (const file of eventFiles) {
-	const filePath = path.join(eventsPath, file);
-	const event = require(filePath);
-	console.log('[INFO] Événement', '\x1b[33m', `${file}`, '\x1b[0m', 'chargé avec succès.');
-	if (event.once) {
-		client.once(event.name, (...args) => event.execute(...args));
+	const event = require(path.join(eventsPath, file));
+	if ('name' in event && 'execute' in event) {
+		client.on(event.name, event.execute.bind(null, client));
+		
+		// Si fichier commence par "0_", on l'éxecute une seule fois
+		if (file.startsWith('0_')) {
+			//event.execute(client);
+			console.log('[INFO] Événement', '\x1b[33m', `${file}`, '\x1b[0m', 'chargé et éxécuté avec succès.');
+		} else {
+			console.log('[INFO] Événement', '\x1b[33m', `${file}`, '\x1b[0m', 'chargé avec succès.');
+		}
 	} else {
-		client.on(event.name, (...args) => event.execute(...args));
+		console.warn('[WARN] L\'événement', '\x1b[33m', `${file}`, '\x1b[0m', 'ne contient pas de nom ou de fonction d\'exécution.');
 	}
 }
 
 // Connexion du client
-client.login(token);
+client.login(token_bot);
